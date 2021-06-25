@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  app:
+    container_name: app
+    image: app
+    build:
+      context: .
+    ports:
+      - 29999:29999

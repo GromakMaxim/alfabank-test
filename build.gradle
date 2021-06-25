@@ -1,11 +1,14 @@
 plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
+    id 'org.springframework.boot' version '2.5.1'
 }
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '16'
+sourceCompatibility = '11'
 
 configurations {
     compileOnly {
@@ -37,4 +40,15 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+
+task fatJar(type: Jar){
+    manifest{
+        attributes 'Main-Class':'"com.example.alfa.AlfaApplication"'
+    }
+    from{
+        configurations.compile.collect{it.isDirectory() ? it : zipTree(it)}
+    }
+    with jar
 }
