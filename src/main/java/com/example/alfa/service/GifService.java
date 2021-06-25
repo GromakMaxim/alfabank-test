@@ -1,29 +1,31 @@
 package com.example.alfa.service;
 
 import com.example.alfa.dto.api.response.GifResponse;
+import com.example.alfa.feignclient.GifClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
 
 @Service
 public class GifService {
-    @Value("${api.gif.url-full1}")
-    private String richURL;
+    @Value("${api.gif.id}")
+    private String id;
 
-    @Value("${api.gif.url-full2}")
-    private String brokeURL;
+    @Value("${api.gif.rating}")
+    private String rating;
 
     @Value("${api.gif.quality}")
     private String gifQuality;
 
-    private RestTemplate restTemplate = new RestTemplate();
+    private GifClient gifClient;
 
-    public String getPicture(boolean isAbove) throws IOException {
+    public GifService(GifClient gifClient) {
+        this.gifClient = gifClient;
+    }
+
+    public String getPicture(boolean rateIsAbove) {
         GifResponse gifResponse = null;
-        if (isAbove) gifResponse = restTemplate.getForObject(richURL, GifResponse.class);
-        if (!isAbove) gifResponse = restTemplate.getForObject(brokeURL, GifResponse.class);
+        if (rateIsAbove) gifResponse = gifClient.getGif(id, "rich", rating);
+        if (!rateIsAbove) gifResponse = gifClient.getGif(id, "broke", rating);
 
         String url;
         if (gifQuality.equalsIgnoreCase("original")) url = gifResponse.getData().getImages().getOriginal().get("url");

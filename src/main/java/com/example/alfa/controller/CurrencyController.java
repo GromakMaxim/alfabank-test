@@ -14,18 +14,19 @@ import java.net.URISyntaxException;
 
 @Controller
 public class CurrencyController {
-	private CurrencyRateService service;
+    private CurrencyRateService service;
 
-	public CurrencyController(CurrencyRateService service) {
-		this.service = service;
-	}
+    public CurrencyController(CurrencyRateService service) {
+        this.service = service;
+    }
 
-	@GetMapping("/")
-	public ResponseEntity greetingForm(@RequestParam("code") String code) throws URISyntaxException, IOException {
-		URI uri = new URI(service.getRates(code));
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.setLocation(uri);
-		return new ResponseEntity(httpHeaders, HttpStatus.SEE_OTHER);
-	}
-
+    @GetMapping("/")
+    public ResponseEntity showGif(@RequestParam("code") String code) throws URISyntaxException, IOException {
+        //I haven't decided what exactly means "give a gif in response",
+        // so I allowed myself to fantasize and just switch to the page with the gif
+        URI uri = new URI(service.getRates(code));
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setLocation(uri);
+        return new ResponseEntity(httpHeaders, HttpStatus.SEE_OTHER);
+    }
 }

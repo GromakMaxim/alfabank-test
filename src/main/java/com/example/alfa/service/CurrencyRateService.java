@@ -1,9 +1,9 @@
 package com.example.alfa.service;
 
 import com.example.alfa.dto.api.response.CurrencyResponse;
+import com.example.alfa.feignclient.CurrencyClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -15,14 +15,8 @@ import java.util.GregorianCalendar;
 @Service
 public class CurrencyRateService {
 
-    @Value("${api.currency.latest}")
-    private String url;
-
     @Value("${api.currency.base}")
     private String base;
-
-    @Value("${api.currency.historical}")
-    private String historicalURL;
 
     @Value("${api.currency.id}")
     private String id;
@@ -32,10 +26,11 @@ public class CurrencyRateService {
 
     private CurrencyAnalyzer analyzer;
     private CurrencyResponse currencyResponse;
-    private RestTemplate restTemplate = new RestTemplate();
+    private CurrencyClient currencyClient;
 
-    public CurrencyRateService(CurrencyAnalyzer analyzer) {
+    public CurrencyRateService(CurrencyAnalyzer analyzer, CurrencyClient currencyClient) {
         this.analyzer = analyzer;
+        this.currencyClient = currencyClient;
     }
 
     public String getRates(String code) throws IOException {
@@ -46,12 +41,12 @@ public class CurrencyRateService {
 
     private double getCurrentRate(String code) {
         if (baseIsChangeable) {
-            currencyResponse = sendRequestToAPI(url + "&base=" + base);
+            currencyResponse = currencyClient.getCurrentRate(id, base);
             var rate = currencyResponse.getRates().get(code);
             System.out.println("1 " + base + " ---> " + code + " " + rate);
             return rate;
         }
-        currencyResponse = sendRequestToAPI(url);
+        currencyResponse = currencyClient.getCurrentRate(id);
         var baseCurrencyRate = currencyResponse.getRates().get(base);
         var desiredCurrencyRate = currencyResponse.getRates().get(code);
         var rate = desiredCurrencyRate / baseCurrencyRate;
@@ -62,18 +57,15 @@ public class CurrencyRateService {
 
     private double getPreviousRate(String code) {
         var date = getPrevDateFromTimestamp(currencyResponse.getTimestamp());
-
         if (baseIsChangeable) {
-            var url = historicalURL + date + ".json?app_id=" + id + "&base=" + base;
-            var rate = sendRequestToAPI(url)
+            var rate = currencyClient.getYesterdayRate(date, id, base)
                     .getRates()
                     .get(code);
             System.out.println("1 " + base + " ---> " + code + " " + rate);
             return rate;
         }
 
-        var url = historicalURL + date + ".json?app_id=" + id;
-        var obj = sendRequestToAPI(url);
+        var obj = currencyClient.getYesterdayRate(date, id);
 
         var baseCurrencyRate = obj.getRates().get(base);
         var desiredCurrencyRate = obj.getRates().get(code);
@@ -81,12 +73,7 @@ public class CurrencyRateService {
         System.out.println();
         System.out.println("previous");
         System.out.println(base + ": " + baseCurrencyRate + ", " + code + ": " + desiredCurrencyRate + " ==" + rate);
-
         return rate;
-    }
-
-    private CurrencyResponse sendRequestToAPI(String url){
-        return restTemplate.getForObject(url, CurrencyResponse.class);
     }
 
     private String getPrevDateFromTimestamp(long timestamp) {
