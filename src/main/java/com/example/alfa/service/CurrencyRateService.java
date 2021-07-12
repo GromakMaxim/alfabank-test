@@ -1,28 +1,22 @@
 package com.example.alfa.service;
 
-import com.example.alfa.dto.api.response.CurrencyResponse;
+import com.example.alfa.dto.api.response.currency.CurrencyResponse;
 import com.example.alfa.feignclient.CurrencyClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
-
 
 @Service
 public class CurrencyRateService {
 
-    @Value("${api.currency.base}")
-    private String base;
-
     @Value("${api.currency.id}")
     private String id;
 
-    @Value("${api.currency.changing-base-parameter-is-enabled}")
-    private boolean baseIsChangeable;
+    @Value("${api.currency.desired}")
+    private String desiredCurrency;
 
     private CurrencyAnalyzer analyzer;
     private CurrencyResponse currencyResponse;
@@ -33,58 +27,64 @@ public class CurrencyRateService {
         this.currencyClient = currencyClient;
     }
 
-    public String getRates(String code) throws IOException {
+    public void setDesiredCurrency(String cur) {
+        if (desiredCurrency == null) this.desiredCurrency = cur;
+    }
+
+    public String checkRatesAndGetGifLink(String code) throws IOException {
+        code = code.toUpperCase();
         var currExchangeRate = getCurrentRate(code);
         var prevExchangeRate = getPreviousRate(code);
+        System.out.println("todayRate: " + currExchangeRate);
+        System.out.println("yesterdayRate: " + prevExchangeRate);
         return analyzer.process(currExchangeRate, prevExchangeRate);
     }
 
-    private double getCurrentRate(String code) {
-        if (baseIsChangeable) {
-            currencyResponse = currencyClient.getCurrentRate(id, base);
-            var rate = currencyResponse.getRates().get(code);
-            System.out.println("1 " + base + " ---> " + code + " " + rate);
-            return rate;
+    double getCurrentRate(String code) {
+        try {
+            currencyResponse = currencyClient.getCurrentRate(id);
+
+            var desiredCurrencyRate = currencyResponse.getRates().get(this.desiredCurrency);
+            var usersCurrencyRate = currencyResponse.getRates().get(code);
+            System.out.println("today " + desiredCurrency + ": " + desiredCurrencyRate);
+            System.out.println("today " + code + ": " + usersCurrencyRate);
+            return calculateCrossCurrencyRate(desiredCurrencyRate, usersCurrencyRate);
+        } catch (NullPointerException npe) {
+            throw new IllegalArgumentException("cant find such currency code in response");
         }
-        currencyResponse = currencyClient.getCurrentRate(id);
-        var baseCurrencyRate = currencyResponse.getRates().get(base);
-        var desiredCurrencyRate = currencyResponse.getRates().get(code);
-        var rate = desiredCurrencyRate / baseCurrencyRate;
-        System.out.println("current");
-        System.out.println(base + ": " + baseCurrencyRate + ", " + code + ": " + desiredCurrencyRate + " ==" + rate);
-        return rate;
     }
 
-    private double getPreviousRate(String code) {
-        var date = getPrevDateFromTimestamp(currencyResponse.getTimestamp());
-        if (baseIsChangeable) {
-            var rate = currencyClient.getYesterdayRate(date, id, base)
-                    .getRates()
-                    .get(code);
-            System.out.println("1 " + base + " ---> " + code + " " + rate);
-            return rate;
-        }
+    double calculateCrossCurrencyRate(double desiredCurrency, double usersCurrency) {
+        if (desiredCurrency < 0 || usersCurrency < 0) throw new IllegalArgumentException("currency < 0");
+        if (desiredCurrency == 0) throw new ArithmeticException(this.desiredCurrency + " is 0");
+        if (usersCurrency == 0) throw new ArithmeticException("rate is 0");
 
-        var obj = currencyClient.getYesterdayRate(date, id);
-
-        var baseCurrencyRate = obj.getRates().get(base);
-        var desiredCurrencyRate = obj.getRates().get(code);
-        var rate = desiredCurrencyRate / baseCurrencyRate;
-        System.out.println();
-        System.out.println("previous");
-        System.out.println(base + ": " + baseCurrencyRate + ", " + code + ": " + desiredCurrencyRate + " ==" + rate);
-        return rate;
+        desiredCurrency = 1 / desiredCurrency;
+        usersCurrency = 1 / usersCurrency;
+        return usersCurrency / desiredCurrency;
     }
 
-    private String getPrevDateFromTimestamp(long timestamp) {
-        Date currentDate = new Date(timestamp * 1_000);
-        Calendar c = new GregorianCalendar();
-        c.setTime(currentDate);
-        c.add(Calendar.DAY_OF_YEAR, -1);
+    double getPreviousRate(String code) {
+        try {
+            var date = getPrevDateFromTimestamp(currencyResponse.getTimestamp());
+            var cr = currencyClient.getYesterdayRate(date, id);
 
-        String pattern = "yyyy-MM-dd";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+            var desiredCurrencyRate = cr.getRates().get(this.desiredCurrency);
+            var usersCurrencyRate = cr.getRates().get(code);
 
-        return simpleDateFormat.format(c.getTime());
+            System.out.println("yesterday " + desiredCurrency + ": " + desiredCurrencyRate);
+            System.out.println("yesterday " + code + ": " + usersCurrencyRate);
+
+            return calculateCrossCurrencyRate(desiredCurrencyRate, usersCurrencyRate);
+        } catch (NullPointerException npe) {
+            throw new IllegalArgumentException("cant find such currency code in response");
+        }
+    }
+
+    String getPrevDateFromTimestamp(long timestamp) {
+        var today = new Date(timestamp * 1000);
+        var yesterday = new Date(today.getTime() - 24 * 3600 * 1000);
+        var sdf = new SimpleDateFormat("yyyy-MM-dd");
+        return sdf.format(yesterday.getTime());
     }
 }

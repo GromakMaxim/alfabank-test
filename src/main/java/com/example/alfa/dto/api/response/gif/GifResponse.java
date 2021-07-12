@@ -1,4 +1,4 @@
-package com.example.alfa.dto.api.response;
+package com.example.alfa.dto.api.response.gif;
 
 import com.example.alfa.dto.obj.Gif;
 

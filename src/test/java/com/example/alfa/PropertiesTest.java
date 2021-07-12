@@ -14,10 +14,10 @@ public class PropertiesTest {
     @Value("${api.gif.id}")
     private String gifId;
 
-    @Value("${api.currency.main}")
+    @Value("${api.currency.url.openexchangerates}")
     private String currencyLink;
 
-    @Value("${api.gif.random}")
+    @Value("${api.gif.url.giphy-random}")
     private String gifLink;
 
     @Value("${api.currency.base}")
@@ -26,12 +26,12 @@ public class PropertiesTest {
     @Value("${api.gif.rating}")
     private String rating;
 
-    @Value("${api.gif.quality}")
-    private String quality;
+    @Value("${api.currency.desired}")
+    private String desiredCurrency;
 
     @Test
     @DisplayName("checking whether all options are assigned")
-    void checkOptions(){
+    void checkOptions() {
         Assertions.assertNotNull(currencyId);
         Assertions.assertNotNull(gifId);
 
@@ -40,7 +40,7 @@ public class PropertiesTest {
 
         Assertions.assertNotNull(base);
         Assertions.assertNotNull(rating);
-        Assertions.assertNotNull(quality);
+        Assertions.assertNotNull(desiredCurrency);
 
     }
 

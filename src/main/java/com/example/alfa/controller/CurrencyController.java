@@ -20,11 +20,11 @@ public class CurrencyController {
         this.service = service;
     }
 
-    @GetMapping("/")
+    @GetMapping("/check-currency-and-show-gif")
     public ResponseEntity showGif(@RequestParam("code") String code) throws URISyntaxException, IOException {
         //I haven't decided what exactly means "give a gif in response",
         // so I allowed myself to fantasize and just switch to the page with the gif
-        URI uri = new URI(service.getRates(code));
+        URI uri = new URI(service.checkRatesAndGetGifLink(code));
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setLocation(uri);
         return new ResponseEntity(httpHeaders, HttpStatus.SEE_OTHER);
