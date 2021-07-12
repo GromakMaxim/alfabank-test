@@ -13,7 +13,7 @@ This magnificent web application was specially developed by Gromak Maxim as a te
 ***
 
 ## Endpoint
-There is no specific endpoint, just type in browser smth like http://localhost:29999/?code=ANG.  
+Use this: http://localhost:29999/check-currency-and-show-gif?code=SCR.  
 As a result, you will be redirected to a page with a suitable animated gif.
 The "code" parameter takes currency codes as an argument (the list is located [here](https://docs.openexchangerates.org/docs/currencies-json))
 
